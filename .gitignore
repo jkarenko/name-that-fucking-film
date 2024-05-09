@@ -1,0 +1,6 @@
+.DS_Store
+.idea/
+dist/**/*
+resources/**/*
+__pycache__/
+*.pyc
