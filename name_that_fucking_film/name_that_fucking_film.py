@@ -46,12 +46,12 @@ def count_same_letters(s1, s2):
 
 
 def read_swears_file(filepath=resources_path + "/resources/combined_file.txt"):
-    with open(filepath, 'r') as file:
+    with open(filepath, 'r', encoding='utf-8') as file:
         return file.read().splitlines()
 
 
 def get_meta_data(imdb_id, filepath=resources_path + "/resources/movie_meta_data.csv"):
-    df = pd.read_csv(filepath)
+    df = pd.read_csv(filepath, encoding='utf-8')
     meta_data = df[df['imdbid'] == imdb_id]
     return meta_data
 
@@ -62,7 +62,7 @@ def get_random_filepath(directory=resources_path + "/resources/raw_texts"):
 
 
 def count_words(file_path, swear_words):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read().lower().split()
     content = [lemmatizer.lemmatize(word) for word in content if word.isalpha()]
     swears = {word: content.count(word) for word in swear_words}
@@ -70,7 +70,7 @@ def count_words(file_path, swear_words):
 
 
 def get_most_common_words(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         content = file.read().lower().split()
     content = [lemmatizer.lemmatize(word) for word in content if word.isalpha()]
     content = [word for word in content if
@@ -108,18 +108,24 @@ def play(score):
     imdb_id = int(imdb_id)
     meta_data = get_meta_data(imdb_id)
     title = meta_data['title'].iloc[0]
+    title_no_spaces = re.sub(r'\s', '', title.lower())
     underscored_title = underscore_words(title)
+    guess = ''
 
     letter_reveals = 0
     straws_used = set()
+
     while True:
+        calculated_score = score - [3 + x * 3 * len(straws_used) for x in range(0, len(straws_used))][
+            -1] if straws_used else score
+        calculated_score -= letter_reveals
+        if guess == title:
+            console.print("You got the final letter! A [bold green]Yippee[/] and a [bold green]Hooray[/] have been sent to your location!", style="blue")
+            break
         if title.lower() == underscored_title.lower():
             console.print("Aww shucks... You didn't quite guess the title.", style="bold yellow")
             calculated_score = 0
             break
-        calculated_score = score - [3 + x * 3 * len(straws_used) for x in range(0, len(straws_used))][
-            -1] if straws_used else score
-        calculated_score -= letter_reveals
         console.print(f"\nTitle: {underscored_title}", style="green")
         guess = console.input(f"[green][Enter][/] to get random letter, "
                               f"[{'strike bright_black' if '1' in straws_used else 'green'}]1){'' if '1' in straws_used else '[/]'} Decade{'[/]' if '1' in straws_used else ''}, "
@@ -202,14 +208,16 @@ def play(score):
                     cost = 1
                     letter_reveals += cost
                     console.print(f"Revealing letter [green]{guess.upper()}[/] in the title for the cost of [yellow]{cost}[/] point{'' if cost == 1 else 's'}.", style="blue")
+                    if title.lower() == underscored_title.lower():
+                        guess = title
                 continue
 
         if guess_title(guess, title):
             console.print("Congratulations! You guessed the title correctly!", style="bold green")
             break
-
-        console.print(f"Your guess is {levenshtein(guess.lower(), title.lower())} changes off.", style="blue")
-        console.print(f"You have {count_same_letters(guess.lower(), title.lower())} of the correct letters.",
+        guess_no_spaces = re.sub(r'\s', '', guess.lower())
+        console.print(f"Your guess is [white]{levenshtein(guess_no_spaces, title_no_spaces)}[/] changes off.", style="blue")
+        console.print(f"You have [white]{count_same_letters(guess_no_spaces, title_no_spaces)}[/] of the correct letters.",
                       style="blue")
 
     console.print(f"\n[blue underline]Title:[/] '{title}' ({meta_data['year'].iloc[0]})", style="italic")
@@ -222,7 +230,13 @@ def play(score):
     console.print("\n[blue underline]Plot:[/]", style="italic")
     console.print(re.split('::.+', meta_data['plot'].iloc[0])[0], style="italic")
     console.print(f"\n[blue underline]Cast:[/]\n{meta_data['cast'].iloc[0]}", style="italic")
-    return calculated_score + Counter(underscored_title).get('_') * 5 if guess_title(guess, title) else 0
+    underscores = Counter(underscored_title).get('_') or 0
+    return calculated_score + underscores * 5 if guess_title(guess, title) else 0
+
+
+def quit_game():
+    console.print(f"\nKTHXBAI!\n", style="bold yellow")
+    quit(0)
 
 
 def main():
@@ -233,15 +247,16 @@ def main():
             try:
                 score = play(start_score)
                 console.print(f"\nYou scored [bold green]{score}[/] points!", style="blue")
-                user_input = console.input("\n[blue]Press [bold green][ENTER][/] to continue or [bold green]q[/] to quit...\n>[/] ")
-                if user_input.lower() == "q":
-                    break
-                console.clear()
             except Exception as e:
                 console.print(f"Oops... something unexpected happened! [{e}]\nLet's try again with another film...", style="yellow")
+            user_input = console.input("\n[blue]Press [bold green][ENTER][/] to continue or [bold green]q[/] to quit...\n>[/] ")
+            if user_input.lower() == "q":
+                quit_game()
+            console.clear()
 
     except KeyboardInterrupt:
-        console.print(f"\n\nKTHXBAI!\n", style="bold yellow")
+        console.print()
+        quit_game()
 
 
 if __name__ == "__main__":
