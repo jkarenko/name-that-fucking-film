@@ -1,6 +1,7 @@
 import os
 import pathlib
 import re
+import sys
 from collections import Counter
 from random import choice
 
@@ -11,7 +12,18 @@ from rich.console import Console
 lemmatizer = WordNetLemmatizer()
 
 console = Console(highlight=False)
-resources_path = "."
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+resources_path = resource_path('')
 
 
 def levenshtein(s1, s2):
@@ -175,7 +187,7 @@ def play(score):
             case "":
                 before = underscored_title + ''
                 underscored_title = reveal_letter(underscored_title, title)
-                letter = set(before) - set(underscored_title)
+                letter = ''.join(set(underscored_title.upper()) - set(before.upper()))
                 console.print(f"Revealed letter [green]{letter}[/]", style="blue")
                 letter_reveals += 1
                 continue
