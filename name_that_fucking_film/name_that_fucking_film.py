@@ -119,18 +119,18 @@ def play(score):
             break
         calculated_score = score - [3 + x * 3 * len(straws_used) for x in range(0, len(straws_used))][
             -1] if straws_used else score
-        calculated_score -= letter_reveals * 3
+        calculated_score -= letter_reveals
         console.print(f"\nTitle: {underscored_title}", style="green")
         guess = console.input(f"[green][Enter][/] to get random letter, "
-                              f"[{'strike' if '1' in straws_used else 'green'}]1) Decade[/], "
-                              f"[{'strike' if '2' in straws_used else 'green'}]2) Awards[/], "
-                              f"[{'strike' if '3' in straws_used else 'green'}]3) Genre[/], "
-                              f"[{'strike' if '4' in straws_used else 'green'}]4) Budget[/], "
-                              f"[{'strike' if '5' in straws_used else 'green'}]5) Keywords[/], "
-                              f"[{'strike' if '6' in straws_used else 'green'}]6) Taglines[/], "
-                              f"[{'strike' if '7' in straws_used else 'green'}]7) Cast[/], "
-                              f"[{'strike' if '8' in straws_used else 'green'}]8) Top-10 Words[/], "
-                              f"[{'strike' if '9' in straws_used else 'green'}]9) Top-10 Swears[/], "
+                              f"[{'strike bright_black' if '1' in straws_used else 'green'}]1){'' if '1' in straws_used else '[/]'} Decade{'[/]' if '1' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '2' in straws_used else 'green'}]2){'' if '2' in straws_used else '[/]'} Awards{'[/]' if '2' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '3' in straws_used else 'green'}]3){'' if '3' in straws_used else '[/]'} Genre{'[/]' if '3' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '4' in straws_used else 'green'}]4){'' if '4' in straws_used else '[/]'} Budget{'[/]' if '4' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '5' in straws_used else 'green'}]5){'' if '5' in straws_used else '[/]'} Keywords{'[/]' if '5' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '6' in straws_used else 'green'}]6){'' if '6' in straws_used else '[/]'} Taglines{'[/]' if '6' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '7' in straws_used else 'green'}]7){'' if '7' in straws_used else '[/]'} Cast{'[/]' if '7' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '8' in straws_used else 'green'}]8){'' if '8' in straws_used else '[/]'} Top-10 Words{'[/]' if '8' in straws_used else ''}, "
+                              f"[{'strike bright_black' if '9' in straws_used else 'green'}]9){'' if '9' in straws_used else '[/]'} Top-10 Swears{'[/]' if '9' in straws_used else ''}, "
                               f"[green]0) Give up[/] or guess a letter or the whole title\n[blue](Score: {calculated_score})>[/] ")
         try:
             straws_used.add(guess) if int(guess) in list(range(0, 10)) else ""
@@ -182,23 +182,26 @@ def play(score):
                         console.print(f"{word}: {count}")
                 continue
             case "0":
-                score = 0
+                calculated_score = 0
                 break
             case "":
                 before = underscored_title + ''
                 underscored_title = reveal_letter(underscored_title, title)
                 letter = ''.join(set(underscored_title.upper()) - set(before.upper()))
                 console.print(f"Revealed letter [green]{letter}[/]", style="blue")
-                letter_reveals += 1
+                letter_reveals += 5
                 continue
             case _ if len(guess) == 1:
                 before = underscored_title + ''
                 underscored_title = reveal_letter(underscored_title, title, guess)
                 if before == underscored_title:
-                    letter_reveals += 1
-                    console.print(f"No letter [green]{guess.upper()}[/] found.", style="yellow")
+                    cost = 10
+                    letter_reveals += cost
+                    console.print(f"No letter [green]{guess.upper()}[/] found - deducting [red]{cost}[/] points.", style="yellow")
                 else:
-                    console.print(f"Revealing letter [green]{guess.upper()}[/] in the title...", style="blue")
+                    cost = 1
+                    letter_reveals += cost
+                    console.print(f"Revealing letter [green]{guess.upper()}[/] in the title for the cost of [yellow]{cost}[/] point{'' if cost == 1 else 's'}.", style="blue")
                 continue
 
         if guess_title(guess, title):
@@ -209,7 +212,6 @@ def play(score):
         console.print(f"You have {count_same_letters(guess.lower(), title.lower())} of the correct letters.",
                       style="blue")
 
-        # underscored_title = reveal_letters(underscored_title, title)
     console.print(f"\n[blue underline]Title:[/] '{title}' ({meta_data['year'].iloc[0]})", style="italic")
     console.print(f"[blue underline]IMDb Link:[/] https://www.imdb.com/title/tt{imdb_url_id}/", style="italic")
     console.print(f"[blue underline]Genres:[/] {meta_data['genres'].iloc[0]}", style="italic")
@@ -217,21 +219,29 @@ def play(score):
     console.print(f"[blue underline]Awards:[/] {meta_data['awards'].iloc[0]}", style="italic")
     console.print(f"[blue underline]IMDb User Rating:[/] {meta_data['imdb user rating'].iloc[0]}", style="italic")
     console.print(f"\n[blue underline]Taglines:[/]\n{meta_data['taglines'].iloc[0]}", style="italic")
-    console.print(f"\n[blue underline]Plot:[/]\n{meta_data['plot'].iloc[0]}", style="italic")
+    console.print("\n[blue underline]Plot:[/]", style="italic")
+    console.print(re.split('::.+', meta_data['plot'].iloc[0])[0], style="italic")
     console.print(f"\n[blue underline]Cast:[/]\n{meta_data['cast'].iloc[0]}", style="italic")
-    return calculated_score
+    return calculated_score + Counter(underscored_title).get('_') * 5 if guess_title(guess, title) else 0
 
 
 def main():
     console.clear()
     start_score = 100
-    while True:
-        score = play(start_score)
-        console.print(f"\nYou scored [blue]{score}[/] points!", style="green")
-        user_input = console.input("\n[bold green]Press [ENTER] to continue or q to quit...[/]")
-        if user_input.lower() == "q":
-            break
-        console.clear()
+    try:
+        while True:
+            try:
+                score = play(start_score)
+                console.print(f"\nYou scored [bold green]{score}[/] points!", style="blue")
+                user_input = console.input("\n[blue]Press [bold green][ENTER][/] to continue or [bold green]q[/] to quit...\n>[/] ")
+                if user_input.lower() == "q":
+                    break
+                console.clear()
+            except Exception as e:
+                console.print(f"Oops... something unexpected happened! [{e}]\nLet's try again with another film...", style="yellow")
+
+    except KeyboardInterrupt:
+        console.print(f"\n\nKTHXBAI!\n", style="bold yellow")
 
 
 if __name__ == "__main__":
