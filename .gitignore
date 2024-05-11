@@ -5,3 +5,4 @@ resources/**/*
 __pycache__/
 *.pyc
 build
+*.spec
