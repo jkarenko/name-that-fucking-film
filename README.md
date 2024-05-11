@@ -26,7 +26,7 @@ cd name-that-fucking-film
 poetry install
 
 # run
-poetry run python name_that_fucking_film/main.py {path_to_dir_containing_resources}
+poetry run python name_that_fucking_film/name_that_fucking_film.py
 ```
 
 Or using PIP
@@ -38,7 +38,7 @@ pip install name-that-fucking-film
 name-that-fucking-film {path_to_dir_containing_resources}
 ```
 
-Download [resources.zip](https://www.dropbox.com/scl/fi/3p4r5drnp8s79lz7fmt8k/resources.zip?rlkey=hnubde0f9jadzthscimz2nx5b&st=54mjk0kb&dl=0) and unzip it somewhere convenient (e.g. `c:\name-that-fucking-film` or `~/name-that-fucking-film`)
+Download [resources.zip](https://www.dropbox.com/scl/fi/3p4r5drnp8s79lz7fmt8k/resources.zip?rlkey=hnubde0f9jadzthscimz2nx5b&st=54mjk0kb&dl=0) and unzip it in the project root,
 
 Zip file contains excerpts from https://www.kaggle.com/datasets/gufukuro/movie-scripts-corpus
 and https://github.com/chucknorris-io/swear-words/tree/master
