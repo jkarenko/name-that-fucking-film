@@ -1,15 +1,17 @@
 import os
 import pathlib
 import re
-import sys
 from collections import Counter
 from random import choice
 
 import pandas as pd
+from nltk.stem import WordNetLemmatizer
 from rich.console import Console
 
+lemmatizer = WordNetLemmatizer()
+
 console = Console(highlight=False)
-resources_path = sys.argv[1]
+resources_path = "."
 
 
 def levenshtein(s1, s2):
@@ -50,12 +52,20 @@ def get_random_filepath(directory=resources_path + "/resources/raw_texts"):
 def count_words(file_path, swear_words):
     with open(file_path, 'r') as file:
         content = file.read().lower().split()
-    return {word: content.count(word) for word in swear_words}
+    content = [lemmatizer.lemmatize(word) for word in content if word.isalpha()]
+    swears = {word: content.count(word) for word in swear_words}
+    return Counter(swears).most_common(10)
 
 
 def get_most_common_words(file_path):
     with open(file_path, 'r') as file:
         content = file.read().lower().split()
+    content = [lemmatizer.lemmatize(word) for word in content if word.isalpha()]
+    content = [word for word in content if
+               word not in ['a', 'the', 'i', 'me', 'you', 'your', 'are', 'to', 'from', 'and', 'or', 'of', 'in',
+                            'as', 'that', 'he', 'him', 'his', 'she', 'her', 'hers', 'is', 'at', 'it', 'we',
+                            'us', 'they', 'them', 'on', 'with', '-', '--']]
+
     return Counter(content).most_common(10)
 
 
@@ -86,11 +96,6 @@ def play(score):
     imdb_id = int(imdb_id)
     meta_data = get_meta_data(imdb_id)
     title = meta_data['title'].iloc[0]
-    num_fucks = count_words(filepath, read_swears_file())
-    console.print("Naughty words used:", style="blue")
-    for word, count in num_fucks.items():
-        if count > 0:
-            print(f"{word}: {count}")
     underscored_title = underscore_words(title)
 
     letter_reveals = 0
@@ -100,7 +105,8 @@ def play(score):
             console.print("Aww shucks... You didn't quite guess the title.", style="bold yellow")
             calculated_score = 0
             break
-        calculated_score = score - [3 + x * 3 * len(straws_used) for x in range(0, len(straws_used))][-1] if straws_used else score
+        calculated_score = score - [3 + x * 3 * len(straws_used) for x in range(0, len(straws_used))][
+            -1] if straws_used else score
         calculated_score -= letter_reveals * 3
         console.print(f"\nTitle: {underscored_title}", style="green")
         guess = console.input(f"[green][Enter][/] to get random letter, "
@@ -109,51 +115,78 @@ def play(score):
                               f"[{'strike' if '3' in straws_used else 'green'}]3) Genre[/], "
                               f"[{'strike' if '4' in straws_used else 'green'}]4) Budget[/], "
                               f"[{'strike' if '5' in straws_used else 'green'}]5) Keywords[/], "
-                              f"[{'strike' if '6' in straws_used else 'green'}]6) Cast[/], "
-                              f"[{'strike' if '7' in straws_used else 'green'}]7) Common Words[/], "
+                              f"[{'strike' if '6' in straws_used else 'green'}]6) Taglines[/], "
+                              f"[{'strike' if '7' in straws_used else 'green'}]7) Cast[/], "
+                              f"[{'strike' if '8' in straws_used else 'green'}]8) Top-10 Words[/], "
+                              f"[{'strike' if '9' in straws_used else 'green'}]9) Top-10 Swears[/], "
                               f"[green]0) Give up[/] or guess a letter or the whole title\n[blue](Score: {calculated_score})>[/] ")
         try:
-            straws_used.add(guess) if int(guess) in list(range(0, 8)) else ""
+            straws_used.add(guess) if int(guess) in list(range(0, 10)) else ""
         except ValueError:
             pass
+
+        console.print("")
         match guess.lower():
             case "1":
-                console.print(str(meta_data['year'].iloc[0])[0:3] + "0", style="blue")
+                console.print("Decade of release", style="blue underline")
+                console.print(str(meta_data['year'].iloc[0])[0:3] + "0")
                 continue
             case "2":
-                console.print(re.sub(r'\b \d{4}\b', '', str(meta_data['awards'].iloc[0])), style="blue")
+                console.print("Awards received", style="blue underline")
+                console.print(re.sub(r'\b \d{4}\b', '', str(meta_data['awards'].iloc[0])))
                 continue
             case "3":
-                console.print(meta_data['genres'].iloc[0], style="blue")
+                console.print("Genres", style="blue underline")
+                console.print(meta_data['genres'].iloc[0])
                 continue
             case "4":
-                console.print(meta_data['budget'].iloc[0], style="blue")
+                console.print("Budget", style="blue underline")
+                console.print(meta_data['budget'].iloc[0])
                 continue
             case "5":
-                console.print(', '.join(meta_data['keywords'].iloc[0].split(',')[:5]), style="blue")
+                console.print("Keywords", style="blue underline")
+                console.print(', '.join(meta_data['keywords'].iloc[0].split(',')[:5]))
                 continue
             case "6":
-                console.print(', '.join(meta_data['cast'].iloc[0].split(',')[:3]), style="blue")
+                console.print("Taglines", style="blue underline")
+                console.print(', '.join(meta_data['taglines'].iloc[0].split(',')[:5]))
                 continue
             case "7":
-                console.print(', '.join(meta_data['cast'].iloc[0].split(',')[:3]), style="blue")
+                console.print(', '.join(meta_data['cast'].iloc[0].split(',')[:3]))
+                continue
+            case "8":
+                common_words = get_most_common_words(filepath)
+                common_words.sort(key=lambda x: x[1], reverse=True)
+                console.print("Top-10 words used:", style="blue underline")
+                for word, count in common_words:
+                    console.print(f"{word}: {count}")
+                continue
+            case "9":
+                swears = count_words(filepath, read_swears_file())
+                swears.sort(key=lambda x: x[1], reverse=True)
+                console.print("Top-10 Naughty Words Used:", style="blue underline")
+                for word, count in swears:
+                    if count > 0:
+                        console.print(f"{word}: {count}")
                 continue
             case "0":
                 score = 0
                 break
             case "":
-                console.print("Revealing a random letter...", style="green")
+                before = underscored_title + ''
                 underscored_title = reveal_letter(underscored_title, title)
-                letter_reveals += 2
+                letter = set(before) - set(underscored_title)
+                console.print(f"Revealed letter [green]{letter}[/]", style="blue")
+                letter_reveals += 1
                 continue
             case _ if len(guess) == 1:
                 before = underscored_title + ''
                 underscored_title = reveal_letter(underscored_title, title, guess)
                 if before == underscored_title:
                     letter_reveals += 1
-                    console.print(f"No letter {guess} found.", style="green")
+                    console.print(f"No letter [green]{guess.upper()}[/] found.", style="yellow")
                 else:
-                    console.print(f"Revealing any letter {guess} in the title...", style="green")
+                    console.print(f"Revealing letter [green]{guess.upper()}[/] in the title...", style="blue")
                 continue
 
         if guess_title(guess, title):
@@ -161,7 +194,8 @@ def play(score):
             break
 
         console.print(f"Your guess is {levenshtein(guess.lower(), title.lower())} changes off.", style="blue")
-        console.print(f"You have {count_same_letters(guess.lower(), title.lower())} of the correct letters.", style="blue")
+        console.print(f"You have {count_same_letters(guess.lower(), title.lower())} of the correct letters.",
+                      style="blue")
 
         # underscored_title = reveal_letters(underscored_title, title)
     console.print(f"\n[blue underline]Title:[/] '{title}' ({meta_data['year'].iloc[0]})", style="italic")
